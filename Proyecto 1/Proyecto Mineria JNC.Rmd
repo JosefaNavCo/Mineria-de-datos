@@ -1,0 +1,92 @@
+---
+title: "Proyecto 1"
+output: github_document
+---
+## Hecho por Josefa Navarro Cofré
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+## Cargando datos
+```{r}
+setwd("/Users/jo/Documents/Minería de datos")
+sanguchez <- read.csv("sanguchez.csv", sep=";")
+```
+## Subiendo librerias
+Se usara la función summary() para ver cual es la nota minima y maxima  y la clase de datos con las que estamos trabajando
+```{r}
+library(quanteda)
+library(dplyr)
+library(tidyverse)
+library(utf8)
+library(ggplot2)
+
+summary(sanguchez) 
+```
+## Borrando columnas que no aportan al análisis
+```{r}
+sang <- sanguchez[,!(colnames(sanguchez) %in% c("url", "Local","Direccion", "texto"))]
+```
+## Ordenando las notas de mayor a menor
+```{r}
+sang_notas <- sang[order(sang$nota, decreasing = TRUE),]
+```
+## Pasando texto a minuscula
+```{r}
+sang_notas$Ingredientes <- char_tolower(sang_notas$Ingredientes)
+```
+## Sacando aquellos precios que no sean chilenos
+Se asume que el restaurant se abrirá en Chile, es decir, competirá en el mercado chileno. Por lo que los precios de otros países no nos interesan
+```{r}
+sang_notas$Precio <- as.numeric(gsub("[$.aprox]","",sang_notas$Precio))
+sang_notas <- na.omit(sang_notas)
+```
+## Realizando variables de notas de interes
+
+Se asume que una buena calificacion son aquellas notas  5, ya que estamos buscando excelencia. Una mala calificacion son 1 y 2. Nota 3 y 4 es neutral y no es de nuestro interes
+```{r}
+Notas_altas <-  filter(sang_notas, nota ==5)
+Notas_bajas <- filter(sang_notas, nota <=2)
+```
+
+## Buscando correlacion entre precion y nota
+```{r}
+#Para ver correlacion de notas con precios
+ComparaPrecio_table <- NULL
+correl <- c("Correlacion",cor(x=sang_notas$Precio,
+    y=sang_notas$nota))
+
+Prom_precioNaltas <- c("Promedio precios Notas altas", mean(Notas_altas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Prom_precioNaltas)
+Max_PrecioNaltas <- c("Max Precio Notas altas", max(Notas_altas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Max_PrecioNaltas)
+Min_PrecioNaltas <- c("Min Precio Notas altas", min(Notas_altas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Min_PrecioNaltas)
+
+Prom_precioNbajas <- c("Promedio precios Notas bajas", mean(Notas_bajas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Prom_precioNbajas)
+Max_PrecioNbajas <- c("Max Precio Notas bajas", max(Notas_bajas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Max_PrecioNbajas)
+Min_PrecioNbajas <- c("Min Precio Notas bajas", min(Notas_bajas$Precio))
+ComparaPrecio_table <- rbind(ComparaPrecio_table , Min_PrecioNbajas)
+ComparaPrecio_table <- rbind(ComparaPrecio_table , correl)
+ComparaPrecio_table
+```
+De acuerdo al calculo de estadistica, No se logra apreciar una correlacion entre precios y notas (R ≈ 0). Por lo que, no se considerará la variable de precio en nuestro análisis
+Debido a que estamos buscando los mejores ingredientes, sin  catalogar el precio. Esto no quiere decir que un sandwich que este bien evaluado y se le modifica el precio, tendrá la misma calificación.
+
+## Borrando precios de los datos de Notas altas y bajas
+```{r}
+Notas_altas <- Notas_altas[,!(colnames(Notas_altas)%in% c("Precio"))]
+Notas_bajas <- Notas_bajas[,!(colnames(Notas_bajas)%in% c("Precio"))]
+```
+## Concluyendo
+Cualquier conjunto de ingredientes que se encuentre en Notas_altas será considerado una buena calificacion. Cabe destacar que si no se respeta el conjunto de ingredientes para cada sandwich puede verse afectada la calificación.
+```{r}
+
+Notas_altas <- Notas_altas[,!(colnames(Notas_altas)%in% c("nota"))]
+Notas_altas
+```
+
+
+
